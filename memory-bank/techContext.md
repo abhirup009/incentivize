@@ -396,3 +396,21 @@ stress-test/
   - `details`: Additional error details specific to the error type (e.g., resource ID, lock owner, retry information)
 
 This approach significantly improves error clarity, debugging, and client-side error handling capabilities.
+
+### Hot Campaign CMS Monitoring
+- **Metric Name:** `cms.hotCampaigns` (Micrometer Gauge)
+- **Purpose:** Exposes current count of "hot" campaigns across all tenants, updated via Count-Min Sketch logic in `HotCampaignService`.
+- **Sampling Guidance (Local):** Query `/actuator/metrics/cms.hotCampaigns` every 200 ms during load tests to observe threshold crossings.
+- **Threshold (Dev):** `hotCampaign.threshold` property set to **50** to surface metric quickly.
+- **Redis Keys:**
+  - `cms:<tenantId>:<windowBucket>` – Hash storing per-campaign counts per 10-min window.
+  - `hot:set:<tenantId>` – Set tracking campaigns whose count ≥ threshold; TTL = 20 min.
+- **Known Pitfalls:**
+  1. Mismatched tenant ID ⇒ gauge remains 0.
+  2. Publishing events for unrelated `actionCode`s inflates hot set; repository filtering still TODO.
+- **Debug Workflow:**
+  ```bash
+  TENANT=$(docker exec -i postgres psql -U incentivize -d incentivize -At -c "SELECT tenant_id FROM campaign LIMIT 1")
+  curl -X POST "http://localhost:8080/helper/generate?tenantId=$TENANT&action=LOGIN&count=2500"
+  watch -n0.2 curl -s http://localhost:8080/actuator/metrics/cms.hotCampaigns
+  ```

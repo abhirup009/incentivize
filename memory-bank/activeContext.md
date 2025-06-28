@@ -8,6 +8,7 @@ Purpose: Track session state and goals (objectives, decisions, questions, blocke
 - Plan and document Count-Min Sketch integration for hot campaign optimisation; subsequent implementation in evaluation pipeline
 
 ## Recent Changes
+- [2025-06-28 15:50:00] Completed CMS hot-campaign simulation (`rules4`), verified gauge increments, documented in CMSRulesSimulationResults.md and added lessons-learned.md; updated techContext & decisionLog.
 - [2025-06-28 13:54:17] Added detailed Count-Min Sketch plan for hot campaigns into ProjectLLD.md and ProjectOverview.md
 - [2025-06-28 09:30:46] Removed CmsClient and refactored CampaignEvaluationService to use ICampaignRepository directly
 - [2025-06-27 17:49:30] Refined Incentivization Platform HLD and updated ProjectOverview.md accordingly

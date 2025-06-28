@@ -16,3 +16,4 @@ Purpose: Record significant architectural and technical decisions.
 [2025-06-28 09:30:46] - [Removed CmsClient; services now call ICampaignRepository directly for campaign lookup, simplifying architecture and improving visibility]
 [2025-06-28 11:25:00] - [Replaced free-form ruleJson with typed rules list and pluggable RuleEngine across domain and services; added ACTION_COUNT & COHORT handlers]
 [2025-06-28 13:54:17] - [Adopted Count-Min Sketch in Redis for hot campaign detection and selective aggregation to save memory and increase throughput]
+[2025-06-28 15:50:00] - [Reduced hotCampaign.threshold default to 50 for dev; standardised DB access via docker exec psql; ensured tenant-aligned event simulation; documented CMS monitoring workflow]
