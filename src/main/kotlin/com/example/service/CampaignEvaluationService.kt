@@ -25,6 +25,7 @@ class CampaignEvaluationService(
     private val aggregationRepository: IUserAggregationRepository,
     private val limitService: LimitService,
     private val ruleEngine: com.example.rules.RuleEngineService,
+    private val hotCampaignService: com.example.hot.HotCampaignService,
     private val redis: RedisClient,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -38,6 +39,7 @@ class CampaignEvaluationService(
         }
 
         campaigns.forEach { campaign ->
+            val isHot = hotCampaignService.isHotCampaign(tenantId, campaign.id)
             // evaluate limits for this action first
             if (!allowedByLimits(event)) {
                 log.info("[LIMIT] Incentive blocked for user {} action {} due to cap", event.userId, event.actionCode)
@@ -53,7 +55,7 @@ class CampaignEvaluationService(
 
             when (campaign.type) {
                 Campaign.CampaignType.SIMPLE -> handleSimple(event, campaign)
-                Campaign.CampaignType.QUEST -> handleQuest(event, campaign) // quest logic simplified
+                Campaign.CampaignType.QUEST -> handleQuest(event, campaign, isHot) // quest logic depends on hot
             }
         }
     }
@@ -70,23 +72,25 @@ class CampaignEvaluationService(
         log.info("[SIMPLE] Incentive {} generated for user {} action {} campaign {}", incentiveId, event.userId, event.actionCode, campaign.name)
     }
 
-    private fun handleQuest(event: ActionEvent, campaign: Campaign) {
-        // Aggregation key pattern: quest:{campaignId}:{userId}
-        val key = "quest:${campaign.id}:${event.userId}"
-        redis.sadd(key, event.actionCode)
+    private fun handleQuest(event: ActionEvent, campaign: Campaign, isHot: Boolean) {
+        if (isHot) {
+            // Aggregation key pattern: quest:{campaignId}:{userId}
+                    val key = "quest:${campaign.id}:${event.userId}"
+                    redis.sadd(key, event.actionCode)
         // expire in 30 days (campaign typical window)
-        redis.expire(key, Duration.ofDays(30))
+                    redis.expire(key, Duration.ofDays(30))
 
-        val actions = redis.smembers(key)
-        if (actions.containsAll(campaign.requiredActions)) {
+                    val actions = redis.smembers(key)
+                    if (actions.containsAll(campaign.requiredActions)) {
             // quest completed – persist incentive
             val incentiveId = UUID.randomUUID()
             incentiveRepository.save(incentiveId, IncentiveType.CASHBACK.name, "USD", 50.0)
             // update aggregation table as completed
             aggregationRepository.save(UUID.randomUUID(), event.userId, campaign.id, "COMPLETED")
-            log.info("[QUEST] Completed for user {} campaign {}", event.userId, campaign.name)
+                        log.info("[QUEST] Completed for user {} campaign {}", event.userId, campaign.name)
         }
 
+                } // end if isHot
         // persist individual action aggregation row as before (sync fallback)
         val aggId = UUID.randomUUID()
         aggregationRepository.save(
