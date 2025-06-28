@@ -148,7 +148,31 @@ Consumer keeps per-user campaign progress in Redis. On final required action, sa
 Deployment topology: dedicated namespaces per tenant tier; horizontal scaling on consumer & DCM; multi-AZ Postgres cluster.
 
 ---
-## 9. Open Questions / Next Steps
+## 9. Hot Campaign Optimisation with Count-Min Sketch
+High-volume campaigns ("hot" campaigns) dominate event traffic. To avoid excessive memory usage in Redis for user aggregation data, we will introduce a **Count-Min Sketch (CMS)** per tenant/time-window to approximate campaign hit counts. Detailed per-user aggregation keys will be created **only** for campaigns whose estimated count exceeds `HOT_THRESHOLD`.
+
+### Why CMS?
+1. **Memory-Efficient** – fixed O(w·d) space; 10 kB per tenant window suffices for 1 % error.
+2. **Speed** – constant-time update/query; pipeline friendly in Redis Lua.
+3. **No False Negatives** – counts are over-estimates → we never miss a hot campaign.
+4. **Simple Deployment** – implemented with existing Redis; no extra infra.
+
+### Flow Summary
+1. IC increments `cms:{tenantId}:{window}` with campaignId hash.
+2. Estimate ≥ threshold? mark as hot (`SADD hot:set:{tenantId}`).
+3. Only for hot campaigns store `agg:{campaignId}:{userId}` hash.
+4. Cold campaigns aggregate in Postgres only.
+
+### Configuration
+* Window size: 10 min (bucketed).
+* Threshold: 5 000 events per window (configurable).
+* Error bounds: ε=0.01, δ=0.01 (w=272, d=5).
+
+### Metrics
+* `campaign_hot_ratio`, `cms_false_positive_rate`, memory delta pre/post.
+
+---
+## 10. Open Questions / Next Steps
 - Rule DSL syntax & complexity (simple JSON vs Drools).  
 - Cohort recomputation cadence & SLA.  
 - Idempotency and deduplication strategy for at-least-once event delivery.  

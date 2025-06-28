@@ -145,4 +145,55 @@ Lua script ensures atomic check + increment.
 7. (reserved) External analytics integration – out of current scope.
 
 ---
+## 6. Hot Campaign Optimisation Using Count-Min Sketch
+
+### 6.1 Rationale
+High-traffic ("hot") campaigns generate a disproportionate share of events. Storing every per-user aggregation for **all** campaigns in Redis wastes memory. We introduce a **Count-Min Sketch (CMS)** based filter to cheaply approximate campaign frequencies in the current sliding window and persist detailed user aggregates *only* for campaigns whose estimated frequency exceeds a threshold.
+
+Advantages of CMS in this context:
+1. **Memory efficiency** – O(w·d) counters (e.g. 2 kB for 0.01 error @ 99% confidence) instead of hash per campaign.
+2. **Speed** – constant-time updates & queries (HSET pipeline / Lua) suitable for 10^5 events/s.
+3. **Probabilistic upper-bound** – CMS never under-estimates, preventing false negatives in hot-campaign detection.
+4. **Simplicity** – fits into existing Redis deployment; no external service required.
+
+### 6.2 Data Structures
+| Redis Key | Type | TTL | Description |
+|-----------|------|-----|-------------|
+| `cms:{tenantId}:{windowTs}` | **CMS** (implemented as hash table array) | 10 min | Rolling sketch of <campaignId,count> for the window.|
+| `hot:set:{tenantId}` | **Set** | 2× window | CampaignIds whose estimated count ≥ **HOT_THRESHOLD**.|
+| `agg:{campaignId}:{userId}` | **Hash** | campaign TTL | Only created for campaigns present in `hot:set`. Stores user progress / quest state. |
+
+### 6.3 Flow
+```mermaid
+sequenceDiagram
+  participant IC as IncentivizeConsumer
+  participant R as Redis
+  IC->>R: CMS.INCR(cms:{tenantId}:{window}, campaignId)
+  IC->>R: CMS.QUERY ➜ estCnt
+  alt estCnt >= HOT_THRESHOLD
+    R-->>IC: true (hot)
+    IC->>R: SADD hot:set:{tenantId} campaignId
+    IC->>R: HINCRBY agg:{campaignId}:{userId} progress 1
+  else cold
+    R-->>IC: false (cold)
+    IC->>PG: update aggregation in Postgres only
+  end
+```
+
+### 6.4 Threshold & Window
+* **HOT_THRESHOLD** default 5 000 events / 10 min per tenant (configurable).
+* Sliding windows implemented by bucketing on `floor(epoch / 600)` seconds.
+* Old sketches expire automatically.
+
+### 6.5 Error Guarantees
+For ε = 0.01 and δ = 0.01, choose width w = ⌈e/ε⌉ ≈ 272 and depth d = ⌈ln(1/δ)⌉ ≈ 5 → 272×5 ≈ 1 360 counters ≈ 10.9 kB (int64) per tenant window – negligible.
+
+### 6.6 Milestones
+1. Implement lightweight CMS helper using 5 Murmur3 hash functions via Lua.
+2. Integrate into `CampaignEvaluationService` as early filter.
+3. Add config flags `hotCampaign.enabled`, threshold, window.
+4. Extend metrics (`campaign_hot_ratio`, `cms_false_positive_rate`).
+5. Gradually roll-out: monitor memory before & after.
+
+---
 *Author: Cascade AI – 2025-06-27*

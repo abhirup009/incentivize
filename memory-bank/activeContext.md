@@ -5,9 +5,10 @@ Purpose: Track session state and goals (objectives, decisions, questions, blocke
 
 ---
 ## Current Focus
-- Simplify code structure (controllers, services, repositories, DTOs in correct packages) and complete removal of unused CMS layer
+- Plan and document Count-Min Sketch integration for hot campaign optimisation; subsequent implementation in evaluation pipeline
 
 ## Recent Changes
+- [2025-06-28 13:54:17] Added detailed Count-Min Sketch plan for hot campaigns into ProjectLLD.md and ProjectOverview.md
 - [2025-06-28 09:30:46] Removed CmsClient and refactored CampaignEvaluationService to use ICampaignRepository directly
 - [2025-06-27 17:49:30] Refined Incentivization Platform HLD and updated ProjectOverview.md accordingly
 - [2025-06-25 03:24:40] Successful jOOQ code generation pipeline using version 3.19.23

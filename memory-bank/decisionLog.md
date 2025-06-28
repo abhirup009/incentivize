@@ -15,3 +15,4 @@ Purpose: Record significant architectural and technical decisions.
 [2025-06-27 18:08:02] - [Aligned Gradle build with Flyway, jOOQ, OpenAPI, removed openapiGenerator() dependency call, fixed bracket syntax]
 [2025-06-28 09:30:46] - [Removed CmsClient; services now call ICampaignRepository directly for campaign lookup, simplifying architecture and improving visibility]
 [2025-06-28 11:25:00] - [Replaced free-form ruleJson with typed rules list and pluggable RuleEngine across domain and services; added ACTION_COUNT & COHORT handlers]
+[2025-06-28 13:54:17] - [Adopted Count-Min Sketch in Redis for hot campaign detection and selective aggregation to save memory and increase throughput]
