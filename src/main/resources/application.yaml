@@ -30,3 +30,10 @@ flyway:
   user: incentivize
   password: cred
   schemas: public
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+

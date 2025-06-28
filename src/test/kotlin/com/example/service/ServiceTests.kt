@@ -100,12 +100,14 @@ class CampaignEvaluationServiceTest {
     private val limitService = mockk<LimitService>()
     private val ruleEngine = mockk<com.example.rules.RuleEngineService>()
     private val redis = mockk<RedisClient>(relaxed = true)
+    private val hotService = mockk<com.example.hot.HotCampaignService>(relaxed = true)
 
     private lateinit var service: CampaignEvaluationService
 
     @BeforeEach
     fun setup() {
-        service = CampaignEvaluationService(campaignRepo, incentiveRepo, aggRepo, limitService, ruleEngine, redis)
+        every { hotService.isHotCampaign(any(), any()) } returns false
+        service = CampaignEvaluationService(campaignRepo, incentiveRepo, aggRepo, limitService, ruleEngine, hotService, redis)
     }
 
     @Test

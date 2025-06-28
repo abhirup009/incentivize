@@ -1,6 +1,7 @@
 package com.example.redis
 
 import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.data.redis.core.HashOperations
 import org.springframework.stereotype.Component
 import java.time.Duration
 
@@ -10,6 +11,8 @@ import java.time.Duration
  */
 @Component
 class RedisClient(private val template: StringRedisTemplate) {
+
+    private val hashOps: HashOperations<String, String, String> = template.opsForHash()
 
     fun incr(key: String, ttl: Duration? = null): Long {
         val value = template.opsForValue().increment(key)!!
@@ -33,4 +36,19 @@ class RedisClient(private val template: StringRedisTemplate) {
     }
 
     fun smembers(key: String): Set<String> = template.opsForSet().members(key) ?: emptySet()
+
+    fun scard(key: String): Long = template.opsForSet().size(key) ?: 0L
+
+    fun keys(pattern: String): Set<String> = template.keys(pattern) ?: emptySet()
+
+    // ---- Hash helpers ----
+    fun hincrBy(key: String, field: String, delta: Long): Long {
+        val value = hashOps.increment(key, field, delta) ?: 0L
+        return value
+    }
+
+    fun hget(key: String, field: String): String? = hashOps.get(key, field)
+
+    // ---- Set membership ----
+    fun sismember(key: String, member: String): Boolean = template.opsForSet().isMember(key, member) ?: false
 }
