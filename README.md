@@ -73,6 +73,39 @@ See [`CountMinSketchSimulation.md`](./CountMinSketchSimulation.md) for the end-t
 
 ---
 
+## Architecture Overview (from ProjectOverview.md)
+Below is a condensed view of the overall system – consult [`ProjectOverview.md`](./ProjectOverview.md) and ProjectLLD for full details.
+
+| Layer | Key Components | Responsibility |
+|-------|----------------|----------------|
+| **Ingestion** | *Kafka Broker* | Durable event stream of user **ActionEvent**s. |
+| **Processing** | *Incentivize Consumer (IC)*, **RuleEngineService**, **LimitService** | Evaluates events against campaign **rules**, applies **limits**, generates incentives. |
+| **Metadata** | *Campaign Management System (CMS)*, *Cohort Service* | CRUD for campaigns & cohorts, queried by IC at runtime. |
+| **Storage** | *PostgreSQL* (relational state), *Redis* (hot counters, CMSketch), *Kafka* (CDC) | Persist incentives, limits, and hot-campaign counters. |
+| **Delivery** | *Distributed Connection Manager (DCM)* | Pushes real-time incentives/notifications to clients. |
+| **Analytics** | *Analytics Bay* (OLAP) | Receives CDC stream for downstream reporting. |
+
+```mermaid
+flowchart LR
+    ES(Event Sources) -->|events| BK[Broker]
+    BK --> IC[Incentivize Consumer]
+    IC --> CMS
+    IC -->|limits| Redis
+    IC -->|incentive| PG[(Postgres)]
+    PG -->|CDC| Redis
+    PG -->|CDC| OLAP[Analytics Bay]
+    IC --> DCM
+    DCM --> Client
+```
+
+* Design goals: sub-500 ms latency, tenant isolation via partitioning, and horizontal scalability of IC workers.
+* **Count-Min Sketch** in Redis flags surging campaigns so that IC can skip DB aggregation for hot items.
+
+---
+See [`CountMinSketchSimulation.md`](./CountMinSketchSimulation.md) for the end-to-end load-test script and analysis.
+
+---
+
 ## Contributing
 1. Fork → feature branch → PR.
 2. Ensure `./gradlew test` passes.
