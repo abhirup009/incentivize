@@ -8,11 +8,14 @@ spring:
     driver-class-name: org.postgresql.Driver
   jooq:
     sql-dialect: POSTGRES
+  flyway:
+    enabled: false
+    sql-dialect: POSTGRES
   redis:
     host: localhost
     port: 6379
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: incentivize-consumer
       auto-offset-reset: earliest

@@ -8,6 +8,7 @@ Purpose: Track work status (completed, current, next, issues).
 ProjectLLD.md created; proceeding to documentation integration and Flyway migration
 
 ## Completed Work
+- [2025-06-28 12:40:30] Added seed_dummy_data.sql, populated 20 sample campaigns via docker exec; expanded CampaignEvaluationServiceTest and RuleEngineServiceTests; committed changes
 - [2025-06-28 11:48:45] Initialized Git repository and committed all current project files
 - [2025-06-28 11:46:25] Added Kafka consumer (spring-kafka), configuration in application.yaml, dependency in Gradle; build successful
 - [2025-06-28 11:25:10] Replaced legacy ruleJson with typed rules model across domain, service, DTOs; added RuleHandlersConfig; build successful
