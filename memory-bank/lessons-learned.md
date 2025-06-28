@@ -106,6 +106,12 @@
    - **Solution:** Created separate migration files for each constraint removal
    - **Best Practice:** Document constraint removals clearly and consider reinstating them in production if data integrity is critical
 
+### Messaging & Runtime Lessons (2025-06-28)
+- Correct Kafka bootstrap servers are critical. Using the wrong mapped port (`29092`) prevented producer/consumer connectivity; switched to `localhost:9092`.
+- Spring component scanning scope must include new packages (e.g., helper controllers). Missing scan led to 404 until `scanBasePackages` was adjusted or package realigned.
+- Kotlin compilation **jvmTarget** must match the runtime JDK (21). Mismatch resulted in byte-code inlining errors.
+- When using Spring-Kafka, prefer serialising the payload to JSON string (`KafkaTemplate<String,String>`) for compatibility; sending the POJO directly caused deserialisation issues.
+
 ## ID Type Handling
 
 1. **Domain Model and Database ID Type Mismatch**
