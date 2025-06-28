@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: incentivize
+  datasource:
+    url: jdbc:postgresql://localhost:5432/incentivize
+    username: incentivize
+    password: cred
+    driver-class-name: org.postgresql.Driver
+  jooq:
+    sql-dialect: POSTGRES
+  redis:
+    host: localhost
+    port: 6379
+  kafka:
+    bootstrap-servers: localhost:29092
+    consumer:
+      group-id: incentivize-consumer
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.example.generated.model.ActionEvent
+
+flyway:
+  url: jdbc:postgresql://localhost:5432/incentivize
+  user: incentivize
+  password: cred
+  schemas: public

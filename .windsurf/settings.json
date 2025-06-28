@@ -1,0 +1,14 @@
+{
+    "kotlin.java.home": "/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home",
+    "activeRules": [
+        "kotlin-workspace-coding-rules.md",
+        "kotlin-workspace-coding-rules-part2.md",
+        "spring-boot-rules.md",
+        "mongo-database-rules.md",
+        "open-api-rules.md",
+        "test-case-rules.md",
+        "docker-rules.md",
+        "database-rules.md",
+        "memory-bank-rules.md"
+    ]
+}

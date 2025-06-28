@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+  title: Campaign Management Service API
+  version: 1.0.0
+  description: |
+    Internal CMS used by Incentivize Core (IC) to create and manage marketing campaigns.
+    All endpoints are "system-to-system" and secured via internal network.
+servers:
+  - url: http://cms.local/api/v1
+
+paths:
+  /campaigns:
+    post:
+      summary: Create campaign
+      operationId: createCampaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreateRequest'
+      responses:
+        '201':
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+  /campaigns/{campaignId}:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      summary: Get campaign by id
+      operationId: getCampaign
+      responses:
+        '200':
+          description: Campaign details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+    put:
+      summary: Update campaign (mutable fields only)
+      operationId: updateCampaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignUpdateRequest'
+      responses:
+        '200':
+          description: Updated campaign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+  /tenants/{tenantId}/campaigns:
+    parameters:
+      - $ref: '#/components/parameters/TenantId'
+    get:
+      summary: List campaigns for tenant
+      operationId: listCampaigns
+      parameters:
+        - name: status
+          in: query
+          description: Filter by campaign status
+          required: false
+          schema:
+            $ref: '#/components/schemas/CampaignStatus'
+      responses:
+        '200':
+          description: List of campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Campaign'
+  /campaigns/{campaignId}:activate:
+    post:
+      summary: Activate campaign
+      operationId: activateCampaign
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: Campaign activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+  /campaigns/{campaignId}:pause:
+    post:
+      summary: Pause campaign
+      operationId: pauseCampaign
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: Campaign paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+
+components:
+  parameters:
+    CampaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TenantId:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    CampaignType:
+      type: string
+      enum: [SIMPLE, QUEST]
+    CampaignStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, PAUSED, ENDED]
+    Reward:
+      type: object
+      properties:
+        currency:
+          type: string
+          example: USD
+        amount:
+          type: number
+          format: double
+      required: [currency, amount]
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/CampaignType'
+        status:
+          $ref: '#/components/schemas/CampaignStatus'
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        ruleJson:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, tenantId, name, type, status, startAt, endAt, createdAt]
+    CampaignCreateRequest:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/CampaignType'
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        ruleJson:
+          type: object
+      required: [tenantId, name, type, startAt, endAt]
+    CampaignUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        endAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/CampaignStatus'
+        ruleJson:
+          type: object
