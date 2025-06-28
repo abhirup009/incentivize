@@ -2,7 +2,10 @@
 
 [![Build](https://github.com/abhirup009/incentivize/actions/workflows/gradle.yml/badge.svg)](https://github.com/abhirup009/incentivize/actions)
 
-A Kotlin/Spring Boot based **incentivization engine** that evaluates user actions against campaign rules and emits rewards in real-time. The project demonstrates:
+A Kotlin/Spring Boot based **incentivization engine** that evaluates user actions against campaign rules and emits rewards in real-time.  
+👉 **Full architectural guide:** see [`ProjectOverview.md`](./ProjectOverview.md)
+
+The project demonstrates:
 
 * Rule-driven campaign evaluation with a pluggable `RuleEngineService`.
 * Per-user & per-campaign limit enforcement backed by Redis counters.
