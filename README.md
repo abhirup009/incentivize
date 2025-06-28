@@ -34,7 +34,14 @@ A Kotlin/Spring Boot based **incentivization engine** that evaluates user action
 TENANT=$(docker exec -i postgres psql -U incentivize -d incentivize -At -c "select tenant_id from campaign limit 1")
 curl -X POST "http://localhost:8080/helper/generate?tenantId=$TENANT&action=LOGIN&count=2500"
 
-# 5. Watch CMS metric (refresh every 0.2s)
+# 5. Test WebSocket incentives (live)
+#   (terminal window 1)
+ npx --yes wscat -c ws://localhost:8080/ws
+#   (terminal window 2)
+ curl -X POST "http://localhost:8080/helper/generate?tenantId=$TENANT&action=LOGIN&count=5"
+#   You should see JSON incentive messages in window 1.
+
+# 6. Watch CMS metric (refresh every 0.2s)
 watch -n0.2 curl -s http://localhost:8080/actuator/metrics/cms.hotCampaigns | jq .measurements[0].value
 ```
 

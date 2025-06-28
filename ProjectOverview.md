@@ -97,7 +97,8 @@ Key supporting services:
 5. **Distributed Connection Manager (DCM)**  
    • Maintains WebSocket sessions to clients; subscribes to `IncentiveGenerated` topic.  
    • Delivers push notifications or triggers mobile PN gateway.
-6. **Limit Service** – centralised evaluation of per-tenant / per-user caps, leveraging Redis counters + Lua scripts for atomicity.
+6. **In-Process WebSocket Handler** *(dev/profile)* – exposes `/ws` endpoint and pushes JSON incentive messages directly to connected clients. Replaces STOMP-based notifier for local demos.
+7. **Limit Service** – centralised evaluation of per-tenant / per-user caps, leveraging Redis counters + Lua scripts for atomicity.
 7. **Notification Service** – optional abstraction over APNs/Firebase.
 
 ---
@@ -107,7 +108,7 @@ Key supporting services:
 3. **Rule Engine** evaluates event context & cohort membership.  
 4. **Limit Service** checks caps; if passed, record spend.  
 5. **IC** stores the generated `Incentive` in DB and publishes `IncentiveGenerated`.  
-6. **DCM** receives the message and pushes NRT notification to the client (<500 ms goal).  
+6. **DCM** (or the dev WebSocket handler) receives the message and pushes NRT notification to the client (<500 ms goal).  
 7. **CDC → Analytics Bay**: Postgres WAL streams to Analytics Bay for offline analysis.  
 8. **CDC → Redis Agg Pipeline**: WAL streams to Redis-based aggregation layer to refresh user and tenant limit counters.
 
