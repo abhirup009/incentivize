@@ -7,6 +7,8 @@ import java.time.Duration
 import java.util.UUID
 
 import com.example.repository.IIncentiveRepository
+import com.example.websocket.IncentivesWebSocketHandler
+import com.example.dto.IncentiveMessageDTO
 import com.example.repository.IUserAggregationRepository
 import com.example.jooq.generated.enums.IncentiveType
 import com.example.redis.RedisClient
@@ -27,6 +29,7 @@ class CampaignEvaluationService(
     private val ruleEngine: com.example.rules.RuleEngineService,
     private val hotCampaignService: com.example.hot.HotCampaignService,
     private val redis: RedisClient,
+    private val wsHandler: IncentivesWebSocketHandler,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -69,28 +72,45 @@ class CampaignEvaluationService(
             currency = "USD",
             amount = 10.0
         )
-        log.info("[SIMPLE] Incentive {} generated for user {} action {} campaign {}", incentiveId, event.userId, event.actionCode, campaign.name)
+        log.info(
+            "[SIMPLE] Incentive {} generated for user {} action {} campaign {}",
+            incentiveId,
+            event.userId,
+            event.actionCode,
+            campaign.name
+        )
+        wsHandler.broadcast(IncentiveMessageDTO(incentiveId, event.userId, IncentiveType.CASHBACK.name, 10.0, "USD", campaign.name))
     }
 
     private fun handleQuest(event: ActionEvent, campaign: Campaign, isHot: Boolean) {
         if (isHot) {
             // Aggregation key pattern: quest:{campaignId}:{userId}
-                    val key = "quest:${campaign.id}:${event.userId}"
-                    redis.sadd(key, event.actionCode)
-        // expire in 30 days (campaign typical window)
-                    redis.expire(key, Duration.ofDays(30))
+            val key = "quest:${campaign.id}:${event.userId}"
+            redis.sadd(key, event.actionCode)
+            // expire in 30 days (campaign typical window)
+            redis.expire(key, Duration.ofDays(30))
 
-                    val actions = redis.smembers(key)
-                    if (actions.containsAll(campaign.requiredActions)) {
-            // quest completed – persist incentive
-            val incentiveId = UUID.randomUUID()
-            incentiveRepository.save(incentiveId, IncentiveType.CASHBACK.name, "USD", 50.0)
-            // update aggregation table as completed
-            aggregationRepository.save(UUID.randomUUID(), event.userId, campaign.id, "COMPLETED")
-                        log.info("[QUEST] Completed for user {} campaign {}", event.userId, campaign.name)
-        }
+            val actions = redis.smembers(key)
+            if (actions.containsAll(campaign.requiredActions)) {
+                // quest completed – persist incentive
+                val incentiveId = UUID.randomUUID()
+                incentiveRepository.save(incentiveId, IncentiveType.CASHBACK.name, "USD", 50.0)
+                wsHandler.broadcast(
+                    IncentiveMessageDTO(
+                        incentiveId,
+                        event.userId,
+                        IncentiveType.CASHBACK.name,
+                        50.0,
+                        "USD",
+                        campaign.name
+                    )
+                )
+                // update aggregation table as completed
+                aggregationRepository.save(UUID.randomUUID(), event.userId, campaign.id, "COMPLETED")
+                log.info("[QUEST] Completed for user {} campaign {}", event.userId, campaign.name)
+            }
 
-                } // end if isHot
+        } // end if isHot
         // persist individual action aggregation row as before (sync fallback)
         val aggId = UUID.randomUUID()
         aggregationRepository.save(

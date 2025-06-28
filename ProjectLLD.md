@@ -197,3 +197,51 @@ For ε = 0.01 and δ = 0.01, choose width w = ⌈e/ε⌉ ≈ 272 and depth d = �
 
 ---
 *Author: Cascade AI – 2025-06-27*
+
+---
+
+## 7. Real-Time Client Delivery – In-Process WebSocket Handler *(2025-06-28)*
+
+> This subsection documents the lightweight **plain WebSocket** path implemented for demo environments where deploying the full Distributed Connection Manager (DCM) is over-kill.
+
+### 7.1 Endpoint
+* **Path**: `ws://<host>/ws`  (SockJS fallback enabled)  
+* **Protocol**: Raw WebSocket **(no STOMP frames)** – payloads are UTF-8 JSON text.
+
+### 7.2 Payload Schema
+```json
+{
+  "id": "<uuid>" ,          // incentiveId
+  "userId": "<uuid>" ,
+  "type": "CASHBACK|POINTS|COUPON" ,
+  "amount": 10.0 ,
+  "currency": "USD" ,
+  "campaignName": "Login Bonus"
+}
+```
+Generated from `IncentiveMessageDTO.kt` using Jackson.
+
+### 7.3 Flow Integration
+```mermaid
+sequenceDiagram
+  participant IC as IncentivizeConsumer
+  participant SVC as CampaignEvaluationService
+  participant WS as IncentivesWebSocketHandler
+  participant Client
+  IC->>SVC: processEvent(event)
+  SVC->>WS: broadcast(IncentiveMessageDTO)
+  WS-->>Client: JSON text frame
+```
+* `IncentivesWebSocketHandler` maintains a **CopyOnWriteArraySet** of sessions and iterates over them when broadcasting.
+* The handler is injected into `CampaignEvaluationService`; STOMP/SimpMessagingTemplate usage has been removed.
+
+### 7.4 Rationale
+* Remove STOMP overhead; easier to consume via browser or CLI (`wscat`).
+* Keeps demo stack **self-contained** – no message broker inside WebSocket path.
+* Production environments can still route incentives via the DCM microservice; this handler is disabled by profile `prod`.
+
+### 7.5 Compatibility Notes
+* Existing STOMP tests were deprecated and removed.
+* Clients must switch from `/topic/incentives` subscription to connecting **once** to `/ws`.
+* Payload field `campaign` renamed to `campaignName` for clarity.
+

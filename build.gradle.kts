@@ -28,6 +28,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // kafka
     implementation("org.springframework.kafka:spring-kafka")
@@ -47,6 +48,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("io.micrometer:micrometer-core")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
 
 
 }
